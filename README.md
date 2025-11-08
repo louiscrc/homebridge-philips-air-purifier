@@ -49,10 +49,10 @@ You should see a JSON payload. If you get pktinfo/decrypt errors, re-run; these 
 
 ```bash
 # Install via npm (recommended)
-npm install -g homebridge-philips-air-purifier
+npm install -g @louis.crc/homebridge-philips-air-purifier
 
 # Or install via Homebridge UI:
-# Go to Plugins → Search for "homebridge-philips-air-purifier" → Install
+# Go to Plugins → Search for "@louis.crc/homebridge-philips-air-purifier" → Install
 ```
 
 **Note:** The plugin includes the Python API script (`philips_air_api.py`) automatically. You only need to ensure Python 3 with `aioairctrl` is installed (Step 1).
@@ -118,4 +118,4 @@ Built using:
 ## Support
 
 - **Issues:** [GitHub Issues](https://github.com/louiscrc/homebridge-philips-air-purifier/issues)
-- **npm Package:** [homebridge-philips-air-purifier](https://www.npmjs.com/package/homebridge-philips-air-purifier)
+- **npm Package:** [@louis.crc/homebridge-philips-air-purifier](https://www.npmjs.com/package/@louis.crc/homebridge-philips-air-purifier)

@@ -1,0 +1,73 @@
+{
+  "pluginAlias": "PhilipsAirPurifier",
+  "pluginType": "accessory",
+  "singular": false,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "required": true,
+        "default": "Air Purifier",
+        "description": "The name of your air purifier as it will appear in HomeKit"
+      },
+      "host": {
+        "title": "IP Address",
+        "type": "string",
+        "required": true,
+        "format": "ipv4",
+        "placeholder": "192.168.1.100",
+        "description": "IP address of your Philips Air Purifier"
+      },
+      "apiScriptPath": {
+        "title": "API Script Path (Optional)",
+        "type": "string",
+        "required": false,
+        "placeholder": "Auto-detected from plugin directory",
+        "description": "Full path to philips_air_api.py (leave blank to use bundled script)"
+      },
+      "pythonPath": {
+        "title": "Python Path (Optional)",
+        "type": "string",
+        "required": false,
+        "placeholder": "Auto-detected (python3 with aioairctrl)",
+        "description": "Path to Python 3 with aioairctrl installed (leave blank for auto-detection)"
+      },
+      "pollInterval": {
+        "title": "Poll Interval (ms)",
+        "type": "integer",
+        "required": false,
+        "default": 10000,
+        "minimum": 5000,
+        "maximum": 300000,
+        "description": "How often to poll the device for status updates (in milliseconds, default 10000 = 10 seconds)"
+      }
+    }
+  },
+  "layout": [
+    {
+      "type": "fieldset",
+      "title": "Device Settings",
+      "expandable": false,
+      "items": ["name", "host"]
+    },
+    {
+      "type": "fieldset",
+      "title": "Advanced Settings",
+      "expandable": true,
+      "expanded": false,
+      "items": [
+        "pollInterval",
+        {
+          "key": "apiScriptPath",
+          "description": "Only needed if you want to use a custom Python script location"
+        },
+        {
+          "key": "pythonPath",
+          "description": "Only needed if auto-detection doesn't find the right Python"
+        }
+      ]
+    }
+  ]
+}

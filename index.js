@@ -48,6 +48,9 @@ class PhilipsAirPurifierAccessory {
     };
 
     this.lastLightLevel = 0;
+    this.pollTimer = null;
+    this.pendingTimeouts = [];
+    this.isUpdating = false;
 
     this.setupServices();
     this.startPolling();
@@ -163,6 +166,12 @@ class PhilipsAirPurifierAccessory {
   }
 
   async updateStatus() {
+    if (this.isUpdating) {
+      this.log.debug('Update already in progress, skipping...');
+      return;
+    }
+
+    this.isUpdating = true;
     try {
       const sensors = await this.executeCommand('sensors');
 
@@ -244,14 +253,38 @@ class PhilipsAirPurifierAccessory {
       this.lightService.getCharacteristic(Characteristic.Brightness).updateValue(brightness);
     } catch (error) {
       this.log.error('Failed to update status:', error.message);
+    } finally {
+      this.isUpdating = false;
     }
   }
 
   startPolling() {
+    this.stopPolling();
     this.updateStatus();
     this.pollTimer = setInterval(() => {
       this.updateStatus();
     }, this.pollInterval);
+  }
+
+  stopPolling() {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+
+  clearAllTimeouts() {
+    this.pendingTimeouts.forEach(timeout => clearTimeout(timeout));
+    this.pendingTimeouts = [];
+  }
+
+  safeSetTimeout(callback, delay) {
+    const timeout = setTimeout(() => {
+      this.pendingTimeouts = this.pendingTimeouts.filter(t => t !== timeout);
+      callback();
+    }, delay);
+    this.pendingTimeouts.push(timeout);
+    return timeout;
   }
 
   async getPowerState(callback) {
@@ -329,7 +362,7 @@ class PhilipsAirPurifierAccessory {
       }
 
       this.log.info(`[setPowerState] Power set to ${powerState} - complete`);
-      setTimeout(() => this.updateStatus(), 1000);
+      this.safeSetTimeout(() => this.updateStatus(), 1000);
       callback(null);
     } catch (error) {
       this.log.error(`[setPowerState] Failed to set power: ${error.message}`);
@@ -440,7 +473,7 @@ class PhilipsAirPurifierAccessory {
         this.purifierService.getCharacteristic(Characteristic.Active).updateValue(0);
 
         this.log.info('[setRotationSpeed] Device turned off (fan set to 0%) - complete');
-        setTimeout(() => this.updateStatus(), 1000);
+        this.safeSetTimeout(() => this.updateStatus(), 1000);
         callback(null);
         return;
       }
@@ -488,7 +521,7 @@ class PhilipsAirPurifierAccessory {
       this.autoModeSwitch.getCharacteristic(Characteristic.On).updateValue(false);
 
       this.log.info(`Mode set to ${mode} (speed: ${value}%)`);
-      setTimeout(() => this.updateStatus(), 1000);
+      this.safeSetTimeout(() => this.updateStatus(), 1000);
       callback(null);
     } catch (error) {
       this.log.error('Failed to set rotation speed:', error);
@@ -595,7 +628,7 @@ class PhilipsAirPurifierAccessory {
       }
 
       this.log.info(`[setAutoMode] Auto mode set to ${value} - complete`);
-      setTimeout(() => this.updateStatus(), 1000);
+      this.safeSetTimeout(() => this.updateStatus(), 1000);
       callback(null);
     } catch (error) {
       this.log.error(`[setAutoMode] Failed to set auto mode: ${error.message}`);
@@ -631,7 +664,7 @@ class PhilipsAirPurifierAccessory {
       this.log.info(
         `[setLightState] Light set to ${value ? 'on' : 'off'} (device: ${deviceLevel})`
       );
-      setTimeout(() => this.updateStatus(), 1000);
+      this.safeSetTimeout(() => this.updateStatus(), 1000);
       callback(null);
     } catch (error) {
       this.log.error(`[setLightState] Failed to set light state: ${error.message}`);
@@ -681,7 +714,7 @@ class PhilipsAirPurifierAccessory {
       this.log.info(
         `[setLightBrightness] Light brightness set to ${value}% → snapped to ${adjustedBrightness}% (device: ${deviceLevel} - ${deviceLevel === 115 ? 'dim' : deviceLevel === 123 ? 'full' : 'off'})`
       );
-      setTimeout(() => this.updateStatus(), 1000);
+      this.safeSetTimeout(() => this.updateStatus(), 1000);
       callback(null);
     } catch (error) {
       this.log.error(`[setLightBrightness] Failed to set light brightness: ${error.message}`);
@@ -697,5 +730,16 @@ class PhilipsAirPurifierAccessory {
       this.airQualitySensor,
       this.lightService,
     ];
+  }
+
+  configure() {
+    this.stopPolling();
+    this.clearAllTimeouts();
+    this.startPolling();
+  }
+
+  identify(callback) {
+    this.log.info(`Identify requested for ${this.name}`);
+    callback(null);
   }
 }
